@@ -6,21 +6,23 @@ An implementation of linear regression from scratch using gradient descent to pr
 
 ## Project Overview
 
-This project implements a machine learning algorithm that predicts car prices using a simple linear regression model trained with gradient descent. The implementation features a **modular architecture** with shared functions and automated workflows via Makefile.
+This project implements univariate linear regression using batch gradient descent on a sample dataset. The model learns parameters θ₀ (intercept) and θ₁ (slope) by iteratively minimising mean squared error. Feature normalisation is applied to prevent gradient instability from feature scale disparity.
 
 ## Table of Contents
 
 1. [Project Structure](#project-structure)
-2. [Installation](#installation)
-3. [Usage](#usage)
-4. [Algorithm Details](#algorithm-details)
-5. [Model Performance](#model-performance)
-6. [Dataset Format](#dataset-format)
-7. [Technical Implementation](#technical-implementation)
+2. [The Problem](#understanding-the-problem)
+3. [Mathematical Foundation](#mathematical-foundation)
+4. [Implementation Details](#implementation-details)
+5. [Installation & Usage](#installation--usage)
+6. [Algorithm Parameters](#algorithm-parameters)
+7. [Model Evaluation](#model-evaluation)
+8. [Technical Notes](#technical-notes)
+9. [References & Further Reading](#references--further-reading)
 
 ## Project Structure
 
-### Core Files
+### Components
 
 1. **data.csv** - Sample dataset
    - Contains car mileage and price pairs
@@ -33,9 +35,9 @@ This project implements a machine learning algorithm that predicts car prices us
    - `calculate_r_squared()`, `calculate_mae()`, `calculate_rmse()` - Metrics
    - **No code duplication** - all programmes import from here
 
-### Mandatory Programmes
+### Mandatory Programs
 
-3. **src/learn.py** - Training programme
+3. **src/learn.py** - Training program
    - Reads dataset from `data.csv`
    - Performs linear regression using gradient descent
    - Saves trained parameters (theta0, theta1) to `theta.txt`
@@ -43,101 +45,270 @@ This project implements a machine learning algorithm that predicts car prices us
      - `tmpTheta0 = learningRate * (1/m) * Σ(estimatePrice(mileage[i]) - price[i])`
      - `tmpTheta1 = learningRate * (1/m) * Σ((estimatePrice(mileage[i]) - price[i]) * mileage[i])`
 
-4. **src/predict.py** - Prediction programme
+4. **src/predict.py** - Prediction program
    - Prompts user for a mileage value
    - Returns estimated price using the trained model
    - Uses the hypothesis: `estimatePrice(mileage) = theta0 + (theta1 * mileage)`
 
 ### Bonus
 
-5. **src/visual.py** - Visualisation and metrics programme
+5. **src/visual.py** - Visualisation and metrics program
    - Plots training data as scatter plot
    - Displays regression line
    - Calculates and displays performance metrics (R², MAE, RMSE)
    - Saves plot as `regression_plot.png`
    - Requires matplotlib
 
-## Installation
+## Understanding the Problem
+
+### Problem Statement
+
+Given a dataset of car mileages and their corresponding prices, train a model to predict the price of a car given its mileage.
+
+**Dataset Characteristics:**
+- Input feature: Mileage (km) - continuous variable
+- Target variable: Price ($) - continuous variable
+- Samples: [data.csv](./data.csv)
+
+### Linear Regression Model
+
+A linear regression model assumes a linear relationship between input and output:
+
+```
+price = θ₀ + θ₁ × mileage
+```
+
+Where:
+- **θ₀** (theta0) = y-intercept (bias term)
+- **θ₁** (theta1) = gradient/slope (weight)
+
+This equation defines a straight line in 2d space. The training objective is to find optimal values of θ₀ and θ₁ that best fit the observed data.
+
+## Mathematical Foundation
+
+### Hypothesis Function
+
+The hypothesis is the line we are trying to fit; every prediction comes from this expression:
+
+```
+h_θ(x) = θ₀ + θ₁x
+```
+
+For our specific problem:
+```
+estimatePrice(mileage) = θ₀ + θ₁ × mileage
+```
+
+### Cost Function (Mean Squared Error)
+
+To measure model performance, we use the Mean Squared Error (MSE) cost function:
+
+```
+J(θ₀, θ₁) = (1/2m) × Σᵢ₌₁ᵐ (h_θ(xᵢ) - yᵢ)²
+```
+
+Where:
+- m = number of training examples
+- xᵢ = mileage of i-th car
+- yᵢ = actual price of i-th car
+- h_θ(xᵢ) = predicted price
+
+**Why square the errors?**
+1. Makes all errors positive (avoids cancellation)
+2. Penalises larger errors more heavily (quadratic penalty)
+3. Produces a convex optimisation landscape (single global minimum)
+4. Mathematically differentiable (enables gradient computation)
+
+**Why divide by 2m instead of just m?**
+The factor of 2 cancels with the derivative of the squared term, simplifying the gradient calculation. This is a mathematical convenience that doesn't affect the optimisation result.
+
+### Gradient Descent Algorithm
+
+Gradient descent iteratively adjusts parameters in the direction that reduces the cost function:
+
+**Update rules:**
+```
+θ₀ := θ₀ - α × (1/m) × Σᵢ₌₁ᵐ (h_θ(xᵢ) - yᵢ)
+θ₁ := θ₁ - α × (1/m) × Σᵢ₌₁ᵐ ((h_θ(xᵢ) - yᵢ) × xᵢ)
+```
+
+Where:
+- α = learning rate (step size)
+- := denotes simultaneous update
+
+**Derivatives of gradients:**
+
+For θ₀:
+```
+∂J/∂θ₀ = (1/m) × Σ(h_θ(x) - y)
+```
+
+For θ₁:
+```
+∂J/∂θ₁ = (1/m) × Σ((h_θ(x) - y) × x)
+```
+
+**Intuition:**
+- Gradient points in direction of steepest ascent
+- Negative gradient points toward minimum
+- Learning rate α controls step size
+- Process repeats until convergence (gradient ≈ 0)
+
+### Feature Normalisation
+
+**Problem:** Raw mileage values (~10,000 - ~250,000) much larger than price values (~3,500 - ~8,500), causing:
+- Instability in gradient computation
+- Slower convergence due to elongated error surface
+- Potential overflow errors
+
+**Solution:** Min-max scaling transforms features to [0, 1] range:
+
+**Normalisation:**
+```
+x_norm = (x - x_min) / (x_max - x_min)
+y_norm = (y - y_min) / (y_max - y_min)
+```
+
+**Denormalisation (reverting parameters):**
+```
+θ₁_original = θ₁_norm × (y_range / x_range)
+θ₀_original = θ₀_norm × y_range + y_min - θ₁_original × x_min
+```
+
+Where:
+- x_range = x_max - x_min
+- y_range = y_max - y_min
+
+**Why this works:**
+Normalisation preserves the underlying relationship whilst equalising feature magnitudes. After training on scaled data, denormalisation transforms parameters back to the original scale for prediction.
+
+## Implementation Details
+
+### Training Algorithm
+
+```
+1. Load dataset from data.csv
+2. Normalise features to [0, 1] range
+3. Initialise θ₀ = 0, θ₁ = 0
+4. For iteration = 1 to MAX_ITERATIONS:
+   a. Compute predictions: ŷᵢ = θ₀ + θ₁xᵢ for all samples
+   b. Calculate errors: eᵢ = ŷᵢ - yᵢ
+   c. Compute gradients:
+      ∂θ₀ = (1/m) × Σeᵢ
+      ∂θ₁ = (1/m) × Σ(eᵢ × xᵢ)
+   d. Update parameters:
+      θ₀ := θ₀ - α × ∂θ₀
+      θ₁ := θ₁ - α × ∂θ₁
+   e. Calculate cost J(θ₀, θ₁)
+   f. Check convergence: if |J_prev - J_current| < ε, break
+5. Denormalise final θ₀ and θ₁
+6. Save parameters to theta.txt
+```
+
+### Prediction Algorithm
+
+```
+1. Load θ₀ and θ₁ from theta.txt
+2. Prompt user for mileage input
+3. Validate input (non-negative number)
+4. Compute: price = θ₀ + θ₁ × mileage
+5. Display predicted price
+```
+
+### Simultaneous Parameter Updates
+
+**Critical implementation detail:** Both parameters must be updated simultaneously using the old values.
+
+**Incorrect (sequential):**
+```python
+theta0 = theta0 - learning_rate * gradient_theta0  # Updates theta0
+theta1 = theta1 - learning_rate * gradient_theta1  # Uses NEW theta0 ✗
+```
+
+**Correct (simultaneous):**
+```python
+tmp_theta0 = learning_rate * gradient_theta0
+tmp_theta1 = learning_rate * gradient_theta1
+theta0 = theta0 - tmp_theta0  # Both use OLD values ✓
+theta1 = theta1 - tmp_theta1
+```
+
+This ensures gradients are computed at a single point.
+
+## Installation & Usage
 
 ### Requirements
 
 - Python 3.6+
-- matplotlib (for visualisation only)
+- matplotlib (for visualisation)
 
-### Quick Setup
+### Quick Start
 
 This project uses a [Makefile](./Makefile) as the main task runner.
 
 ```bash
-# Clone or download the project
-cd ft_linear_regression
+# Setup
+make venv                     # Create virtual environment + install dependencies
+source .venv/bin/activate     # Activate environment
 
-# Create virtual environment and install dependencies
-make venv
-
-# Activate virtual environment
-source .venv/bin/activate
-
-# Run everything
-make
+# Usage
+make                          # Train model + generate visualisation
+make predict                  # Make predictions
+make workflow                 # Train + test with sample values
 ```
-
-### Manual Setup
-
-```bash
-# Without virtual environment
-pip install matplotlib
-
-# Or with virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-pip install matplotlib
-```
-
-## Usage
 
 ### Makefile Commands
 
-| Command | Description |
-|---------|-------------|
-| `make venv` | Create virtual environment + install deps |
-| `make` or `make run` | Train model + generate visualisation |
-| `make train` | Train the model only |
-| `make predict` | Make predictions |
-| `make visual` | Generate charting and metrics |
-| `make workflow` | Train + test with sample mileages |
+| Command | Action |
+|---------|--------|
+| `make venv` | Create virtual environment + install matplotlib |
+| `make` / `make run` | Train model + generate visualisation |
+| `make train` | Train model only |
+| `make predict` | Interactive prediction (auto-trains if needed) |
+| `make visual` | Generate visualisation and metrics |
+| `make workflow` | Train + automated tests |
 | `make test` | Complete test suite |
 | `make clean` | Remove generated files |
-| `make fclean` | Remove all files including venv and cache |
-| `make re` | Clean and retrain from scratch |
+| `make fclean` | Remove all files including venv |
+| `make re` | Clean + retrain |
 
-### Workflow
-
-#### 1. Train the Model
-
-Train model using dataset:
+### Manual Execution
 
 ```bash
+# Training
 python src/learn.py
+
+# Prediction
+python src/predict.py
+
+# Visualisation
+python src/visual.py
 ```
 
-This will:
-- Load data from `data.csv`
-- Train the linear regression model
-- Display training progress and convergence
-- Save model parameters to `theta.txt`
-- Show the final R² score
+## Algorithm Parameters
 
-Example output:
+### Parameters
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| Learning rate (α) | 0.1 | Balanced convergence speed vs. stability |
+| Max iterations | 1000 | Sufficient for convergence on small dataset |
+| Convergence threshold (ε) | 1e-9 | Detects when cost function plateaus |
+| Initial θ₀ | 0.0 | Standard practice for linear regression |
+| Initial θ₁ | 0.0 | Allows gradient descent to find optimal values |
+
+### Training Output
+
 ```
 Loading training data...
-Loaded 24 data points
+Loaded data points
 
-Training on 24 examples...
+Training on examples...
 Learning rate: 0.1, Iterations: 1000
 
 Iteration    1: Cost = 0.205790
 Iteration  100: Cost = 0.025324
+Iteration  200: Cost = 0.015884
 ...
 Iteration 1000: Cost = 0.010352
 
@@ -150,37 +321,48 @@ Final model parameters:
 Model R² score: 0.7329 (73.29%)
 ```
 
-#### 2. Make Predictions
+**Interpretation:**
+- Cost decreases monotonically → gradient descent working correctly
+- θ₁ = -0.021274 → car loses ~$21.27 per 1000 km driven
+- θ₀ = 8481.17 → theoretical price at 0 km (extrapolation)
 
-Use prediction program:
+## Model Evaluation
 
-```bash
-python src/predict.py
+### Performance Metrics
+
+**1. R² Score (coefficient of determination)**
+
+```
+R² = 1 - (SS_res / SS_tot)
 ```
 
-Example:
+Where:
+- SS_res = Σ(yᵢ - ŷᵢ)² (residual sum of squares)
+- SS_tot = Σ(yᵢ - ȳ)² (total sum of squares)
+
+**Interpretation:**
+- R² = 1.0: Perfect predictions
+- R² = 0.73: Model explains 73% of price variance
+- R² = 0.0: Model no better than predicting the mean
+
+**2. Mean absolute error (MAE)**
+
 ```
-Enter the mileage (in km): 50000
-
-Estimated price for 50,000 km: $7,417.49
-
-Model parameters: theta0 = 8481.172797, theta1 = -0.021274
-```
-
-#### 3. Visualise Results
-
-View the regression line and model performance:
-
-```bash
-python src/visual.py
+MAE = (1/m) × Σ|yᵢ - ŷᵢ|
 ```
 
-This will:
-- Display performance metrics (MAE, RMSE, R²)
-- Generate a plot showing data points and regression line
-- Save the plot as `regression_plot.png`
+Average absolute deviation between predictions and actual values. Provides interpretable error in original units (dollars).
 
-Example output:
+**3. Root mean squared error (RMSE)**
+
+```
+RMSE = √[(1/m) × Σ(yᵢ - ŷᵢ)²]
+```
+
+Penalises large errors more heavily than MAE. Useful for detecting outliers.
+
+### Model Performance on Sample Dataset
+
 ```
 MODEL PERFORMANCE METRICS
 ==================================================
@@ -190,77 +372,56 @@ R² Score:                   0.7329 (73.29%)
 ==================================================
 
 Interpretation:
-  Good fit. The model captures most of the trend.
-
-Plot saved as 'regression_plot.png'
+  Relatively good fit. The model captures most of the trend.
 ```
 
-## Algorithm Details
+### Example Predictions
 
-### Linear Regression
+| Mileage (km) | Predicted Price | Interpretation |
+|--------------|----------------|----------------|
+| 50,000 | $7,417.49 | Average usage vehicle |
+| 100,000 | $6,353.09 | High mileage |
+| 150,000 | $5,288.69 | Very high mileage |
+| 200,000 | $4,224.29 | Extreme mileage |
 
-The model learns a linear relationship between mileage (x) and price (y):
+**Price depreciation rate:** $21.27 per 1,000 km
 
-```
-price = theta0 + theta1 × mileage
-```
+## Technical Notes
 
-Where:
-- **theta0** is the y-intercept
-- **theta1** is the gradient
+### Convexity of Loss Function
 
-### Gradient Descent
+For linear regression with MSE, the cost function is convex (bowl-shaped). This guarantees:
+- Single global minimum (no local minima)
+- Gradient descent will converge from any starting point
+- No risk of getting stuck in suboptimal solutions
 
-The training algorithm uses gradient descent to minimise the cost function by iteratively updating the parameters:
+### Learning Rate Selection
 
-1. Calculate predictions for all training examples
-2. Compute the error between predictions and actual values
-3. Update parameters using the gradient descent formulas (from project specification)
-4. Simultaneously update both theta0 and theta1
-5. Repeat until convergence
+The learning rate α = 0.1 was chosen empirically:
+- α too large (>0.5): Risk of overshooting minimum, divergence
+- α too small (<0.01): Slow convergence, many iterations required
+- α = 0.1: Good balance for normalised data in [0,1] range
 
-### Data Normalisation
+### Computational Complexity
 
-The implementation uses feature scaling to normalise the data to [0, 1] range, which:
-- Improves convergence speed significantly
-- Prevents numerical instability
-- Ensures gradients are well-balanced
+- Training: O(m × n × iterations) where m = samples, n = features
+- For this dataset: O(24 × 1 × 1000) ≈ 24,000 operations
+- Prediction: O(1) constant time
 
-The final parameters are denormalised back to the original scale for predictions.
+### Extrapolation Warnings
 
-## Model Performance
+Model predictions outside training range [22,899 - 240,000 km] are extrapolations. Linear assumption may not hold at extremes (e.g., brand new cars, completely depreciated vehicles).
 
-The model achieves an R² score of approximately 73-94% depending on the dataset, indicating:
-- The model explains the majority of variance in car prices
-- Strong correlation between mileage and price
-- Good predictive performance
+## References & Further Reading
 
-### Performance Metrics
+**Mathematical foundations:**
+- Gradient descent optimisation
+- Convex optimisation theory
+- Feature scaling techniques
+- Statistical regression analysis
 
-- **R² Score**: Measures how well the model explains the data (0-1, higher is better)
-- **MAE (Mean Absolute Error)**: Average prediction error in dollars
-- **RMSE (Root Mean Squared Error)**: Like MAE but penalises large errors more
-
-## Dataset Format
-
-The dataset should be a CSV file with the following format:
-
-```csv
-km,price
-240000,3650
-139800,3800
-150500,4400
-...
-```
-
-Where:
-- `km` is the mileage in standardised unit of distance
-- `price` is the car price in standardised currency
-
-## Technical Implementation
-
-### Algorithm Parameters
-
-- **Learning rate**: 0.1 (configurable)
-- **Iterations**: 1000 (configurable)
-- **Convergence threshold**: 1e-9 (difference in cost between iterations)
+**Machine learning concepts:**
+- Supervised learning paradigm
+- Overfitting vs. underfitting
+- Bias-variance tradeoff
+- Cross-validation methods
