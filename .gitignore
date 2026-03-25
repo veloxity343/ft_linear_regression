@@ -11,6 +11,9 @@ ENV/
 
 # Project specific
 theta.txt
+*.png
+*.jpg
+*.jpeg
 
 # IDE
 .vscode/

@@ -15,7 +15,7 @@ from model import (
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print("Error: matplotlib is required for visualization.")
+    print("Error: matplotlib is required for visualisation.")
     print("Install it with: pip install matplotlib")
     sys.exit(1)
 

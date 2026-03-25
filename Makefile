@@ -57,7 +57,7 @@ check-model:
 	fi
 
 visual: check-model
-	@echo "$(BLUE)$(BOLD)Generating visualization...$(NC)"
+	@echo "$(BLUE)$(BOLD)Generating visualisation...$(NC)"
 	@$(PYTHON) $(SRC_DIR)/visual.py
 	@echo "$(GREEN)✓ Plot saved as $(PLOT_FILE)$(NC)\n"
 
