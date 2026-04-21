@@ -1,6 +1,38 @@
 #!/usr/bin/env python3
 
 import os
+import sys
+import csv
+
+
+def load_data(filename='data.csv'):
+    mileages = []
+    prices = []
+    
+    try:
+        with open(filename, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                mileages.append(float(row['km']))
+                prices.append(float(row['price']))
+        
+        if len(mileages) == 0:
+            raise ValueError("No data found in file")
+        
+        return mileages, prices
+    
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        sys.exit(1)
+    except KeyError as e:
+        print(f"Error: CSV must have 'km' and 'price' columns. Missing: {e}")
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Error: Invalid data format - {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        sys.exit(1)
 
 
 def estimate_price(mileage, theta0, theta1):

@@ -5,6 +5,7 @@ import sys
 import os
 
 from model import (
+    load_data,
     estimate_price,
     load_theta,
     calculate_r_squared,
@@ -12,31 +13,13 @@ from model import (
     calculate_rmse
 )
 
+
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     print("Error: matplotlib is required for visualisation.")
     print("Install it with: pip install matplotlib")
     sys.exit(1)
-
-
-def load_data(filename='data.csv'):
-    mileages = []
-    prices = []
-    
-    try:
-        with open(filename, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                mileages.append(float(row['km']))
-                prices.append(float(row['price']))
-        return mileages, prices
-    except FileNotFoundError:
-        print(f"Error: File '{filename}' not found.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        sys.exit(1)
 
 
 def plot_regression(mileages, prices, theta0=None, theta1=None):
