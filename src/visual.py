@@ -23,14 +23,19 @@ except ImportError:
 
 
 def plot_regression(mileages, prices, theta0=None, theta1=None):
+    """
+    @brief Plot training data and optional regression line.
+    @details Draws mileage-price scatter points, overlays the fitted line when
+    theta values are provided, saves the figure, and displays it.
+    """
     plt.figure(figsize=(10, 6))
     
-    # Plot data points
+    # scatter plot
     plt.scatter(mileages, prices, color='blue', alpha=0.6, s=50, label='Training data')
     
-    # Plot regression line if theta values are available
+    # regression line
     if theta0 is not None and theta1 is not None:
-        # Generate points for the regression line
+        # generated line points
         min_mileage = min(mileages)
         max_mileage = max(mileages)
         line_x = [min_mileage, max_mileage]
@@ -38,7 +43,6 @@ def plot_regression(mileages, prices, theta0=None, theta1=None):
         
         plt.plot(line_x, line_y, color='red', linewidth=2, label='Linear regression')
         
-        # Add equation to plot
         equation = f'Price = {theta0:.2f} + ({theta1:.4f} * Mileage)'
         plt.text(0.05, 0.95, equation, transform=plt.gca().transAxes,
                 fontsize=10, verticalalignment='top',
@@ -50,26 +54,28 @@ def plot_regression(mileages, prices, theta0=None, theta1=None):
     plt.grid(True, alpha=0.3)
     plt.legend()
     
-    # Format axes
+    # axes
     plt.ticklabel_format(style='plain', axis='both')
     
     plt.tight_layout()
     
-    # Save plot
     plt.savefig('regression_plot.png', dpi=150)
     print("Plot saved as 'regression_plot.png'")
-    
-    # Show plot
+
     plt.show()
 
 
 def display_metrics(mileages, prices, theta0, theta1):
-    # Calculate metrics using shared functions
+    """
+    @brief Print core model performance metrics.
+    @details Computes R-squared, MAE, and RMSE, then prints values with a short
+    qualitative interpretation of model fit.
+    """
+    # calculate metrics
     r_squared = calculate_r_squared(mileages, prices, theta0, theta1)
     mae = calculate_mae(mileages, prices, theta0, theta1)
     rmse = calculate_rmse(mileages, prices, theta0, theta1)
     
-    # Display metrics
     print("\n" + "="*50)
     print("MODEL PERFORMANCE METRICS")
     print("="*50)
@@ -78,7 +84,7 @@ def display_metrics(mileages, prices, theta0, theta1):
     print(f"R² Score:                   {r_squared:.4f} ({r_squared * 100:.2f}%)")
     print("="*50)
     
-    # Interpretation
+    # formal interpretation
     print("\nInterpretation:")
     if r_squared > 0.9:
         print("  Excellent fit! The model explains the data very well.")
@@ -91,13 +97,18 @@ def display_metrics(mileages, prices, theta0, theta1):
 
 
 def main():
+    """
+    @brief Run visual analysis of the regression model.
+    @details Loads data and saved parameters, prints metrics when available, and
+    generates a plot with or without the trained regression line.
+    """
     print("Loading data and model parameters...")
     
-    # Load training data
+    # load training data
     mileages, prices = load_data('data.csv')
     print(f"Loaded {len(mileages)} data points")
     
-    # Load theta parameters
+    # load theta parameters
     theta0, theta1 = load_theta()
     
     if theta0 is None or theta1 is None:
@@ -107,10 +118,8 @@ def main():
     else:
         print(f"Model parameters: theta0 = {theta0:.6f}, theta1 = {theta1:.6f}\n")
         
-        # Calculate and display metrics
         display_metrics(mileages, prices, theta0, theta1)
         
-        # Plot data and regression line
         print("\nGenerating plot...")
         plot_regression(mileages, prices, theta0, theta1)
     

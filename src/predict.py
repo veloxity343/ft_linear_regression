@@ -6,7 +6,12 @@ from model import estimate_price, load_theta
 
 
 def main():
-    # Load trained parameters
+    """
+    @brief Run interactive price prediction.
+    @details Loads saved model parameters, prompts for mileage input, validates
+    user input, and prints the estimated car price.
+    """
+    # load trained parameters
     theta0, theta1 = load_theta()
     
     if theta0 is None or theta1 is None:
@@ -14,7 +19,7 @@ def main():
         print("Run 'python src/learn.py' or 'make train' first to train the model.\n")
         theta0, theta1 = 0.0, 0.0
     
-    # Get mileage
+    # get mileage
     try:
         mileage_input = input("Enter the mileage (in km): ")
         mileage = float(mileage_input)
@@ -23,10 +28,9 @@ def main():
             print("Error: Mileage cannot be negative.")
             return 1
         
-        # Calculate prediction
+        # prediction
         price = estimate_price(mileage, theta0, theta1)
         
-        # Display result
         print(f"\nEstimated price for {mileage:,.0f} km: ${price:,.2f}")
         
         if theta0 != 0.0 or theta1 != 0.0:

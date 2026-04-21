@@ -6,6 +6,11 @@ import csv
 
 
 def load_data(filename='data.csv'):
+    """
+    @brief Load mileage and price values from CSV file.
+    @details Reads `km` and `price` columns, converts them to float lists,
+    validates non-empty input, and exits with an error message on invalid input.
+    """
     mileages = []
     prices = []
     
@@ -36,10 +41,19 @@ def load_data(filename='data.csv'):
 
 
 def estimate_price(mileage, theta0, theta1):
+    """
+    @brief Estimate car price from mileage.
+    @details Applies linear model equation using intercept theta0 and slope
+    theta1 for the provided mileage value (Note linear equation y = mx + b).
+    """
     return theta0 + (theta1 * mileage)
 
 
 def load_theta(filename='theta.txt'):
+    """
+    @brief Load saved model parameters from disk.
+    @details Returns theta0 and theta1 from a two-line text file
+    """
     if not os.path.exists(filename):
         return None, None
     
@@ -58,6 +72,10 @@ def load_theta(filename='theta.txt'):
 
 
 def save_theta(theta0, theta1, filename='theta.txt'):
+    """
+    @brief Save model parameters to a text file.
+    @details Writes theta0 and theta1 on separate lines.
+    """
     try:
         with open(filename, 'w') as f:
             f.write(f"{theta0}\n")
@@ -69,6 +87,12 @@ def save_theta(theta0, theta1, filename='theta.txt'):
 
 
 def normalise_data(data):
+    """
+    @brief Scale a numeric list into [0, 1] range.
+    @details Returns normalised values with original minimum and range, and
+    handles constant input by returning zeros with a safe non-zero range. Feature 
+    scaling prevents large value ranges from destabilising updates.
+    """
     min_val = min(data)
     max_val = max(data)
     range_val = max_val - min_val
@@ -82,6 +106,11 @@ def normalise_data(data):
 
 
 def denormalise_theta(theta0, theta1, min_mile, range_mile, min_price, range_price):
+    """
+    @brief Convert normalised theta values back to original units.
+    @details Adjusts slope and intercept from scaled mileage/price space to
+    produce parameters usable with raw mileage values.
+    """
     theta1_original = (theta1 * range_price) / range_mile
     theta0_original = theta0 * range_price + min_price - theta1_original * min_mile
     
@@ -89,6 +118,13 @@ def denormalise_theta(theta0, theta1, min_mile, range_mile, min_price, range_pri
 
 
 def calculate_cost(mileages, prices, theta0, theta1):
+    """
+    @brief Compute mean squared cost for linear regression.
+    @details Calculates J(theta) = (1 / (2m)) * sum((y_pred - y_actual)^2) over the
+    provided dataset and model parameters. This measures average squared error,
+    so larger mistakes are penalised more than smaller ones, and provides a
+    smoother objective that gradient descent can minimise reliably.
+    """
     m = len(mileages)
     predictions = [estimate_price(x, theta0, theta1) for x in mileages]
     errors = [pred - actual for pred, actual in zip(predictions, prices)]
@@ -97,30 +133,45 @@ def calculate_cost(mileages, prices, theta0, theta1):
 
 
 def calculate_r_squared(mileages, prices, theta0, theta1):
+    """
+    @brief Compute the R-squared score of model predictions.
+    @details Compares residual variance to total variance and returns 0 when
+    total variance is zero to avoid division errors. R-squared gives
+    interpretable summary of explained variance for model quality reporting.
+    """
     predictions = [estimate_price(x, theta0, theta1) for x in mileages]
     
-    # Calculate mean of actual prices
     mean_price = sum(prices) / len(prices)
     
-    # Total sum of squares (total variance)
+    # sum of squares (total variance)
     ss_tot = sum((y - mean_price) ** 2 for y in prices)
     
-    # Residual sum of squares (unexplained variance)
+    # residual sum of squares (unexplained variance)
     ss_res = sum((y - pred) ** 2 for y, pred in zip(prices, predictions))
     
-    # R² score
     r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
     
     return r_squared
 
 
 def calculate_mae(mileages, prices, theta0, theta1):
+    """
+    @brief Compute mean absolute error for predictions.
+    @details Averages absolute differences between predicted and actual prices
+    across all samples. MAE expresses typical error directly in price units.
+    """
     predictions = [estimate_price(x, theta0, theta1) for x in mileages]
     mae = sum(abs(y - pred) for y, pred in zip(prices, predictions)) / len(prices)
     return mae
 
 
 def calculate_rmse(mileages, prices, theta0, theta1):
+    """
+    @brief Compute root mean squared error for predictions.
+    @details Calculates the square root of average squared prediction errors on
+    the supplied dataset. RMSE penalises large misses more strongly than
+    MAE, making outlier-sensitive errors visible.
+    """
     predictions = [estimate_price(x, theta0, theta1) for x in mileages]
     mse = sum((y - pred) ** 2 for y, pred in zip(prices, predictions)) / len(prices)
     rmse = mse ** 0.5
